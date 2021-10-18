@@ -5,25 +5,32 @@ USE employee_db;
 
 DROP TABLE IF EXISTS department;
 CREATE TABLE department (
-    id INT PRIMARY KEY NOT NULL,
-    department_name VARCHAR(30) NOT NULL
+    id INT AUTO_INCREMENT NOT NULL,
+    department_name VARCHAR(30) NOT NULL,
+    PRIMARY KEY (id)
 );
 
-DROP TABLE IF EXISTS role_name;
-CREATE TABLE role_name (
-    id INT PRIMARY KEY NOT NULL,
+DROP TABLE IF EXISTS job_role;
+CREATE TABLE job_role (
+    id INT NOT NULL AUTO_INCREMENT,
     title VARCHAR(30) NOT NULL, 
     salary DECIMAL NOT NULL,
-    department_id INT NOT NULL
+    department_id INT NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (department_id)
+    REFERENCES department (id)
 );
 
 DROP TABLE IF EXISTS employee;
 CREATE TABLE employee(
-    id INT PRIMARY KEY NOT NULL,
+    id INT NOT NULL AUTO_INCREMENT,
     first_name VARCHAR(30) NOT NULL, 
-    last_name DECIMAL NOT NULL,
-    role_id INT NOT NULL,
-    manager_id INT
+    last_name VARCHAR(30) NOT NULL,
+    job_role_id INT NOT NULL,
+    manager_id INT,
+    PRIMARY KEY (id),
+    FOREIGN KEY (job_role_id) REFERENCES job_role(id),
+    FOREIGN KEY (manager_id) REFERENCES employee(id)
 );
 
 
