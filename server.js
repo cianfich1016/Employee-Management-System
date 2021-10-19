@@ -16,34 +16,69 @@ const mainQuestions = () => {
         },
     ]).then((data) => {
         if (data.mainQuestions === "View All Departments"){
-            viewAllDepartments();
+            viewAllDepartments(); 
         } else if (data.mainQuestions === "View All Roles") {
             viewAllRoles();
+           
         } else if (data.mainQuestions === "View All Employees") {
             viewAllEmployees ();
+            
+        } else if (data.mainQuestions === "Add a Department"){
+            addDepartment ();
         }
     });
 };
 
 const viewAllDepartments = () => {
     db.query('SELECT * FROM department', function (err, results) {
+        if (err) throw err;
         console.log("");
         console.table(results);
+        mainQuestions();
       });
+    
+    
 };
 
 const viewAllRoles = () => {
     db.query('SELECT * FROM job_role', function (err, results) {
+        if (err) throw err;
         console.log("");
         console.table(results);
+        mainQuestions();
       });
 };
 
 const viewAllEmployees = () => {
     db.query('SELECT * FROM employee', function (err, results) {
+        if (err) throw err;
         console.log("");
         console.table(results);
+        mainQuestions();
       });
+};
+
+const addDepartment = () => {
+    inquirer.prompt([
+        {
+          type: 'input',
+          name: 'department_name',
+          message: 'What is the name of the department you would like to add?',
+        },
+    ]).then((data) => {
+        const sql = `INSERT INTO department (department_name) 
+            VALUES (?)`;
+        const param = data.department_name;
+        db.query(sql, param, (err, result) => {
+            if (err) {
+              console.log(err)
+              return;
+            } else {
+                mainQuestions();
+            }
+
+        });
+    });
 };
 
 const startProgram = () => {
