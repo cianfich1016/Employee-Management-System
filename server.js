@@ -3,7 +3,8 @@ const mysql = require('mysql2');
 const figlet = require('figlet');
 const inquirer = require ('inquirer');
 require ('console.table');
-const db = require("./db/connect.js")
+const db = require("./db/connect.js");
+const { listenerCount } = require('./db/connect.js');
 
 
 const mainQuestions = () => {
@@ -19,12 +20,14 @@ const mainQuestions = () => {
             viewAllDepartments(); 
         } else if (data.mainQuestions === "View All Roles") {
             viewAllRoles();
-           
         } else if (data.mainQuestions === "View All Employees") {
-            viewAllEmployees ();
-            
+            viewAllEmployees ();   
         } else if (data.mainQuestions === "Add a Department"){
             addDepartment ();
+        } else if (data.mainQuestions === "Add a Role"){
+            addRole ();
+        } else if (data.mainQuestions === "Add an Employee") {
+            addEmployee();
         }
     });
 };
@@ -41,7 +44,7 @@ const viewAllDepartments = () => {
 };
 
 const viewAllRoles = () => {
-    db.query('SELECT * FROM job_role', function (err, results) {
+    db.query('SELECT job_role.id, job_role.title, department.department_name, job_role.salary FROM job_role LEFT JOIN department ON job_role.department_id = department.id', function (err, results) {
         if (err) throw err;
         console.log("");
         console.table(results);
@@ -50,7 +53,7 @@ const viewAllRoles = () => {
 };
 
 const viewAllEmployees = () => {
-    db.query('SELECT * FROM employee', function (err, results) {
+    db.query('SELECT employee.id, employee.first_name, employee.last_name, job_role.title, job_role.salary FROM employee LEFT JOIN job_role ON employee.job_role_id = job_role.id', function (err, results) {
         if (err) throw err;
         console.log("");
         console.table(results);
@@ -74,9 +77,109 @@ const addDepartment = () => {
               console.log(err)
               return;
             } else {
+                console.log ("Added your department to the database.")
                 mainQuestions();
             }
 
+        });
+    });
+};
+
+const addRole = () => {
+    db.query('SELECT * FROM department', function (err, results) {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+            type: 'input',
+            name: 'title',
+            message: 'What is the name of the role you would like to add?',
+            },
+            {
+                type: 'input',
+                name: 'salary',
+                message: 'What is the salary of the role?',
+            },
+            {
+                type: 'list',
+                name: 'department_id',
+                message: 'What department does the role belong to?',
+                choices: () => {
+                    const departList =[];
+                    for (let i = 0; i < results.length; i++){
+                        departList.push(results[i].department_name)
+                    }
+                    return departList;
+                }
+            },
+        ]).then((data) => {
+            const sql = `INSERT INTO job_role (title, salary, department_id) 
+                VALUES (?, ?, ?)`;
+            //const id = departID;
+            const param = [data.title, data.salary, results.id]
+            db.query(sql, param, (err, results) => {
+                if (err) {
+                console.log(err)
+                return;
+                } else {
+                    mainQuestions();
+                }
+
+            });
+        });
+    });
+};
+
+const addEmployee = () => {
+    db.query('SELECT * FROM job_role', function (err, results) {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+            type: 'input',
+            name: 'first_name',
+            message: 'What is the first name of the employee to be added?',
+            },
+            {
+                type: 'input',
+                name: 'last_name',
+                message: 'What is the last name of the employee to be added?',
+            },
+            {
+                type: 'list',
+                name: 'job_role_name',
+                message: 'What role does the employee have?',
+                choices: () => {
+                    const roleList =[];
+                    for (let i = 0; i < results.length; i++){
+                        roleList.push(results[i].title)
+                    }
+                    return roleList;
+                }
+            },
+            // {
+            //     type: 'list',
+            //     name: 'manager_name',
+            //     message: 'Who will be his/her manager?',
+            //     choices: () => {
+            //         for (let i = 0; i < results.length; i++){
+            //             roleList.push(results[i].job_role_name)
+            //         }
+            //         return roleList;
+            //     }
+            // },
+        ]).then((data) => {
+            const sql = `INSERT INTO employee (first_name, last_name, job_role_id, manager_id) 
+                VALUES (?, ?, ?, ?)`;
+            
+            const param = [data.first_name, data.last_name, ]
+            db.query(sql, param, (err, results) => {
+                if (err) {
+                console.log(err)
+                return;
+                } else {
+                    mainQuestions();
+                }
+
+            });
         });
     });
 };
