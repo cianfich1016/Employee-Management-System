@@ -16,7 +16,7 @@ const mainQuestions = () => {
           type: 'list',
           name: 'mainQuestions',
           message: 'What would you like to do?',
-          choices: ["View All Departments", "View All Roles", "View All Employees", "Add a Department", "Add a Role", "Add an Employee", "Update an Employee Role", "Delete a Department", "Exit"]
+          choices: ["View All Departments", "View All Roles", "View All Employees", "Add a Department", "Add a Role", "Add an Employee", "Update an Employee Role", "Exit"]
         },
         //Determine which function needs to be called based on user answer choice
     ]).then((data) => {
@@ -32,7 +32,7 @@ const mainQuestions = () => {
             addRole ();
         } else if (data.mainQuestions === "Add an Employee") {
             addEmployee();
-        } else if (data.mainQuestions === "Update an Employee"){
+        } else if (data.mainQuestions === "Update an Employee Role"){
             updateEmployee();
         } else if (data.mainQuestions === "Exit") {
             quit();
@@ -89,7 +89,9 @@ const addDepartment = () => {
               console.log(err)
               return;
             } else {
+                console.log(" ")
                 console.log ("Added your department to the database.")
+                console.log(" ")
                 mainQuestions();
             }
 
@@ -147,7 +149,9 @@ const addRole = () => {
                 console.log(err)
                 return;
                 } else {
+                    console.log(" ")
                     console.log ("Added your role to the database.")
+                    console.log(" ")
                     mainQuestions();
                 }
             });
@@ -220,9 +224,11 @@ const addEmployee = async () => {
                     console.log(err)
                     return;
                 } else {
+                    console.log(" ")
+                    console.log("New employee was added.")
+                    console.log(" ")
                     mainQuestions();
                 }
-        
         });
         } else {
             let sql = `INSERT INTO employee (first_name, last_name, job_role_id, manager_id) 
@@ -238,18 +244,75 @@ const addEmployee = async () => {
             const param = [data.first_name, data.last_name, rKey, mKey]
             db.query(sql, param, (err, results) => {
             if (err) {
-            console.log(err)
-            return;
+                console.log(err)
+                return;
             } else {
+                console.log(" ")
+                console.log("New employee was added.")
+                console.log(" ")
                 mainQuestions();
             }
-        
         });
         }
-        
-        
     });
 };
+
+const updateEmployee = async () => {
+    let roles = await db.queryPromise('SELECT * FROM job_role');
+
+    roles = roles.map(role => {
+        return {
+            key: role.id,
+            value: role.title,
+        };
+    });
+
+    let employees = await db.queryPromise('SELECT * FROM employee');
+
+    employees = employees.map(employee => {
+        return {
+            key: employee.id,
+            value: employee.first_name + " " + employee.last_name,
+        };
+    });
+
+    inquirer.prompt([
+        {
+            type: 'list',
+            name: 'employee',
+            message: 'Which employee would you like to update?',
+            choices: () => employees,
+        },
+        {
+            type: 'list',
+            name: 'job_role_name',
+            message: 'What new role do you want to assign?',
+            choices: () => roles,
+        },
+    ]).then((data) => {
+        for(let i = 0; i < roles.length; i++){
+            if (data.job_role_name = roles[i].value){
+                newRoleID = roles[i].key;
+            }
+            if (data.employee = employees[i].value){
+                newEmployeeID = employees[i].key;
+            }
+        }
+        db.query("UPDATE employee SET job_role_id = (?) WHERE employee.id = (?)", [newRoleID, newEmployeeID], function (err, results) {
+            if (err) {
+                console.log(err)
+                return;
+            } else {
+                console.log(" ")
+                console.log("Employee was updated.")
+                console.log(" ")
+                mainQuestions();
+            };
+        });
+
+    });
+
+}
 
 //If user selects "Exit" from  main menu questions
 const quit = () => {
