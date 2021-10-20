@@ -160,22 +160,31 @@ const addEmployee = () => {
                     return roleList;
                 }
             },
-            // {
-            //     type: 'list',
-            //     name: 'manager_name',
-            //     message: 'Who will be his/her manager?',
-            //     choices: () => {
-            //         for (let i = 0; i < results.length; i++){
-            //             roleList.push(results[i].job_role_name)
-            //         }
-            //         return roleList;
-            //     }
-            // },
+            {
+                type: 'list',
+                name: 'manager_name',
+                message: 'Who will be his/her manager?',
+                choices: () => {
+                    const employeeList = [];
+                    for (let i = 0; i < results.length; i++){
+                        employeeList.push(results[i].first_name, results[i].last_name)
+                        employeeList.join();
+                    }
+                    return employeeList;
+                }
+            },
         ]).then((data) => {
             const sql = `INSERT INTO employee (first_name, last_name, job_role_id, manager_id) 
                 VALUES (?, ?, ?, ?)`;
+            let roleID = '';
+            for (let i = 0; i < results.length; i++){
+                if (results[i].title === data.job_role_name){
+                    roleID = results[i].id;       
+                }
+            };
             
-            const param = [data.first_name, data.last_name, ]
+            const param = [data.first_name, data.last_name, roleID]
+            console.log(param)
             db.query(sql, param, (err, results) => {
                 if (err) {
                 console.log(err)
