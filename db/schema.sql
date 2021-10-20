@@ -39,7 +39,7 @@ CREATE TABLE employee(
     manager_id INT,
     PRIMARY KEY (id),
     FOREIGN KEY (job_role_id) REFERENCES job_role(id),
-    FOREIGN KEY (manager_id) REFERENCES job_role(id)
+    FOREIGN KEY (manager_id) REFERENCES employee(id)
 );
 
 

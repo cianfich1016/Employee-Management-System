@@ -3,8 +3,11 @@ const express = require('express');
 const mysql = require('mysql2');
 const figlet = require('figlet');
 const inquirer = require ('inquirer');
+const util = require('util');
 require ('console.table');
 const db = require("./db/connect.js");
+
+db.queryPromise = util.promisify(db.query);
 
 //Main menu prompt
 const mainQuestions = () => {
@@ -13,7 +16,7 @@ const mainQuestions = () => {
           type: 'list',
           name: 'mainQuestions',
           message: 'What would you like to do?',
-          choices: ["View All Departments", "View All Roles", "View All Employees", "Add a Department", "Add a Role", "Add an Employee", "Update an Employee Role", "Exit"]
+          choices: ["View All Departments", "View All Roles", "View All Employees", "Add a Department", "Add a Role", "Add an Employee", "Update an Employee Role", "Delete a Department", "Exit"]
         },
         //Determine which function needs to be called based on user answer choice
     ]).then((data) => {
@@ -29,6 +32,8 @@ const mainQuestions = () => {
             addRole ();
         } else if (data.mainQuestions === "Add an Employee") {
             addEmployee();
+        } else if (data.mainQuestions === "Update an Employee"){
+            updateEmployee();
         } else if (data.mainQuestions === "Exit") {
             quit();
         }
@@ -92,9 +97,13 @@ const addDepartment = () => {
     });
 };
 
+
+
 const addRole = () => {
+    //Select all from department table
     db.query('SELECT * FROM department', function (err, results) {
         if (err) throw err;
+        //Inquirer questions to determine parameters of job_role table that need be added for new role
         inquirer.prompt([
             {
             type: 'input',
@@ -110,6 +119,7 @@ const addRole = () => {
                 type: 'list',
                 name: 'department_id',
                 message: 'What department does the role belong to?',
+                //Return choices from department table to list all of departments when choosing what department the role would belong to
                 choices: () => {
                     const departList =[];
                     for (let i = 0; i < results.length; i++){
@@ -119,14 +129,18 @@ const addRole = () => {
                 }
             },
         ]).then((data) => {
+            //Query to insert input into job_role table
             const sql = `INSERT INTO job_role (title, salary, department_id) 
                 VALUES (?, ?, ?)`;
+            //Creating a way to return the department id of the department user said role was a part of
             let departID = '';
+            //Loop through results to determine where the user text input matches an id number and return that to the variable departID.
             for (let i = 0; i < results.length; i++){
                 if (results[i].department_name === data.department_id){
                     departID = results[i].id;       
                 }
             };
+            //Create new parameter to input in for query to add a role
             let param = [data.title, data.salary, departID]
             db.query(sql, param, (err, results) => {
                 if (err) {
@@ -141,83 +155,120 @@ const addRole = () => {
     });
 };
 
-const addEmployee = () => {
-    db.query('SELECT * FROM job_role', function (err, results) {
-        if (err) throw err;
-        inquirer.prompt([
-            {
+const addEmployee = async () => {
+    //Select all from the table job_role to be used to show roles for user to choose from.
+    let roles = await db.queryPromise('SELECT * FROM job_role');
+
+    roles = roles.map(role => {
+        return {
+            key: role.id,
+            value: role.title,
+        };
+    });
+
+    let employees = await db.queryPromise('SELECT * FROM employee');
+
+    employees = employees.map(employee => {
+        return {
+            key: employee.id,
+            value: employee.first_name + " " + employee.last_name,
+        };
+    });
+
+    employees.push({key: -1,
+        value: "No Manager"})
+
+    inquirer.prompt([
+        {
+        type: 'input',
+        name: 'first_name',
+        message: 'What is the first name of the employee to be added?',
+        },
+        {
             type: 'input',
-            name: 'first_name',
-            message: 'What is the first name of the employee to be added?',
-            },
-            {
-                type: 'input',
-                name: 'last_name',
-                message: 'What is the last name of the employee to be added?',
-            },
-            {
-                type: 'list',
-                name: 'job_role_name',
-                message: 'What role does the employee have?',
-                choices: () => {
-                    const roleList =[];
-                    for (let i = 0; i < results.length; i++){
-                        roleList.push(results[i].title)
-                    }
-                    return roleList;
+            name: 'last_name',
+            message: 'What is the last name of the employee to be added?',
+        },
+        {
+            type: 'list',
+            name: 'job_role_name',
+            message: 'What role does the employee have?',
+            choices: () => roles,
+        },
+        {
+            type: 'list',
+            name: 'manager_name',
+            message: 'Who will be his/her manager?',
+            choices: () => employees,
+                
+        },
+    ]).then((data) => {
+        if (data.manager_name === "No Manager"){
+            let sql = `INSERT INTO employee (first_name, last_name, job_role_id, manager_id) 
+            VALUES (?, ?, ?, NULL)`
+            for (let i = 0; i< roles.length; i++){
+                if (data.job_role_name === roles[i].value){
+                    rKey = roles[i].key;
                 }
-            },
-            {
-                type: 'list',
-                name: 'manager_name',
-                message: 'Who will be his/her manager?',
-                choices: () => {
-                    const employeeList = [];
-                    for (let i = 0; i < results.length; i++){
-                        employeeList.push(results[i].first_name, results[i].last_name)
-                        employeeList.join();
-                    }
-                    return employeeList;
+                if (data.manager_name === employees[i].value){
+                    mKey = employees[i].key;
                 }
-            },
-        ]).then((data) => {
-            const sql = `INSERT INTO employee (first_name, last_name, job_role_id, manager_id) 
-                VALUES (?, ?, ?, ?)`;
-            let roleID = '';
-            for (let i = 0; i < results.length; i++){
-                if (results[i].title === data.job_role_name){
-                    roleID = results[i].id;       
-                }
-            };
-            
-            const param = [data.first_name, data.last_name, roleID]
-            console.log(param)
+            }
+            const param = [data.first_name, data.last_name, rKey, null]
             db.query(sql, param, (err, results) => {
                 if (err) {
-                console.log(err)
-                return;
+                    console.log(err)
+                    return;
                 } else {
                     mainQuestions();
                 }
-            });
+        
         });
+        } else {
+            let sql = `INSERT INTO employee (first_name, last_name, job_role_id, manager_id) 
+            VALUES (?, ?, ?, ?)`;
+            for (let i = 0; i< roles.length; i++){
+                if (data.job_role_name === roles[i].value){
+                    rKey = roles[i].key;
+                }
+                if (data.manager_name === employees[i].value){
+                    mKey = employees[i].key;
+                }
+            }
+            const param = [data.first_name, data.last_name, rKey, mKey]
+            db.query(sql, param, (err, results) => {
+            if (err) {
+            console.log(err)
+            return;
+            } else {
+                mainQuestions();
+            }
+        
+        });
+        }
+        
+        
     });
 };
 
+//If user selects "Exit" from  main menu questions
 const quit = () => {
     console.log("See you next time!");
     process.exit();
 }
 
+//Opening text art
 const startProgram = () => {
     console.log(figlet.textSync("Employee"))
     console.log(figlet.textSync("Manager"))
     console.log(figlet.textSync("System"))
 };
 
+//Begin application
 const init = () => {
     startProgram(); 
     mainQuestions();
  };
 
+ //Call to begin application
 init();
