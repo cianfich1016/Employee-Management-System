@@ -114,8 +114,13 @@ const addRole = () => {
         ]).then((data) => {
             const sql = `INSERT INTO job_role (title, salary, department_id) 
                 VALUES (?, ?, ?)`;
-            //const id = departID;
-            const param = [data.title, data.salary, results.id]
+            let departID = '';
+            for (let i = 0; i < results.length; i++){
+                if (results[i].department_name === data.department_id){
+                    departID = results[i].id;       
+                }
+            };
+            let param = [data.title, data.salary, departID]
             db.query(sql, param, (err, results) => {
                 if (err) {
                 console.log(err)
