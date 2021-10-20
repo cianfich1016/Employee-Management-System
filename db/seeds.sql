@@ -1,3 +1,5 @@
+--Inserting data into tables--
+--Each id was auto-incremented so parameters begin with the next one following id--
 INSERT INTO department (department_name)
 VALUES  ("Executive"),
         ("Sales"),

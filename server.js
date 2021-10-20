@@ -1,12 +1,12 @@
+//Import and require appropriate packages
 const express = require('express');
 const mysql = require('mysql2');
 const figlet = require('figlet');
 const inquirer = require ('inquirer');
 require ('console.table');
 const db = require("./db/connect.js");
-const { listenerCount } = require('./db/connect.js');
 
-
+//Main menu prompt
 const mainQuestions = () => {
     inquirer.prompt([
         {
@@ -15,6 +15,7 @@ const mainQuestions = () => {
           message: 'What would you like to do?',
           choices: ["View All Departments", "View All Roles", "View All Employees", "Add a Department", "Add a Role", "Add an Employee", "Update an Employee Role", "Exit"]
         },
+        //Determine which function needs to be called based on user answer choice
     ]).then((data) => {
         if (data.mainQuestions === "View All Departments"){
             viewAllDepartments(); 
@@ -28,22 +29,24 @@ const mainQuestions = () => {
             addRole ();
         } else if (data.mainQuestions === "Add an Employee") {
             addEmployee();
+        } else if (data.mainQuestions === "Exit") {
+            quit();
         }
     });
 };
 
 const viewAllDepartments = () => {
+    //Select all from the department table and display as a formatted table
     db.query('SELECT * FROM department', function (err, results) {
         if (err) throw err;
         console.log("");
         console.table(results);
         mainQuestions();
-      });
-    
-    
+      });  
 };
 
 const viewAllRoles = () => {
+    //Select specific parameters from the job_role and department table and join them together from left (job_role then department) for the all role table and display as a formatted table
     db.query('SELECT job_role.id, job_role.title, department.department_name, job_role.salary FROM job_role LEFT JOIN department ON job_role.department_id = department.id', function (err, results) {
         if (err) throw err;
         console.log("");
@@ -61,7 +64,9 @@ const viewAllEmployees = () => {
       });
 };
 
+
 const addDepartment = () => {
+    //Ask for which department name to insert from user input
     inquirer.prompt([
         {
           type: 'input',
@@ -69,8 +74,10 @@ const addDepartment = () => {
           message: 'What is the name of the department you would like to add?',
         },
     ]).then((data) => {
+        //Query to insert user input to department table  
         const sql = `INSERT INTO department (department_name) 
             VALUES (?)`;
+        //What user wants to input
         const param = data.department_name;
         db.query(sql, param, (err, result) => {
             if (err) {
@@ -126,9 +133,9 @@ const addRole = () => {
                 console.log(err)
                 return;
                 } else {
+                    console.log ("Added your role to the database.")
                     mainQuestions();
                 }
-
             });
         });
     });
@@ -192,11 +199,15 @@ const addEmployee = () => {
                 } else {
                     mainQuestions();
                 }
-
             });
         });
     });
 };
+
+const quit = () => {
+    console.log("See you next time!");
+    process.exit();
+}
 
 const startProgram = () => {
     console.log(figlet.textSync("Employee"))
