@@ -301,14 +301,17 @@ const updateEmployee = async () => {
         },
         //Create new variable for the new role id from the new role.
     ]).then((data) => {
+        console.log(employees)
         for(let i = 0; i < roles.length; i++){
-            if (data.job_role_name = roles[i].value){
+            if (data.job_role_name === roles[i].value){
                 newRoleID = roles[i].key;
-            }
-            if (data.employee = employees[i].value){
+            };
+        for(let i = 0; i < employees.length; i++){
+            if (data.employee === employees[i].value){
                 newEmployeeID = employees[i].key;
             }
         }
+    }   
         //Update employee role based on new job chosen
         db.query("UPDATE employee SET job_role_id = (?) WHERE employee.id = (?)", [newRoleID, newEmployeeID], function (err, results) {
             if (err) {
@@ -316,6 +319,7 @@ const updateEmployee = async () => {
                 return;
             } else {
                 console.log(" ")
+                console.log(newRoleID, newEmployeeID)
                 console.log("Employee was updated.")
                 console.log(" ")
                 mainQuestions();
