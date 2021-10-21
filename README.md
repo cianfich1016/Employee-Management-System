@@ -16,6 +16,11 @@
 
   ## Usage
   After all appropriate packages are installed, run "node server.js" from the command line and begin to answer prompts.
+  ![Beginning of application.](./images/Image1.png)
+  ![Example of viewing and the display of prompts to follow.](./images/Image2.png)
+  ![Example of update employee function with prompts and result of input.](./images/Image3.png)
+
+  View video of application [here.](https://watch.screencastify.com/v/JbYMnkYA5xMY6pJnjJAn)
 
   ## License
   License for this project: [MIT License](https://choosealicense.com/licenses/mit/)
