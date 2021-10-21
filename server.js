@@ -319,7 +319,6 @@ const updateEmployee = async () => {
                 return;
             } else {
                 console.log(" ")
-                console.log(newRoleID, newEmployeeID)
                 console.log("Employee was updated.")
                 console.log(" ")
                 mainQuestions();
