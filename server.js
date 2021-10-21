@@ -1,5 +1,4 @@
 //Import and require appropriate packages
-const express = require('express');
 const mysql = require('mysql2');
 const figlet = require('figlet');
 const inquirer = require ('inquirer');
@@ -60,8 +59,17 @@ const viewAllRoles = () => {
       });
 };
 
-const viewAllEmployees = () => {
-    db.query('SELECT employee.id, employee.first_name, employee.last_name, job_role.title, job_role.salary FROM employee LEFT JOIN job_role ON employee.job_role_id = job_role.id', function (err, results) {
+const viewAllEmployees = async () => {
+    let employees = await db.queryPromise('SELECT * FROM employee');
+
+    employees = employees.map(employee => {
+        return {
+            key: employee.id,
+            value: employee.first_name + " " + employee.last_name,
+        };
+    });
+
+    db.query('SELECT employee.id, employee.first_name, employee.last_name, job_role.title, job_role.salary, department.department_name FROM employee LEFT JOIN job_role ON employee.job_role_id = job_role.id LEFT JOIN department ON job_role.department_id = department.id', function (err, results) {
         if (err) throw err;
         console.log("");
         console.table(results);
@@ -162,14 +170,14 @@ const addRole = () => {
 const addEmployee = async () => {
     //Select all from the table job_role to be used to show roles for user to choose from.
     let roles = await db.queryPromise('SELECT * FROM job_role');
-
+    //Map each role with a key/value pair.
     roles = roles.map(role => {
         return {
             key: role.id,
             value: role.title,
         };
     });
-
+    //Select all from employee table and map all with a key/value pair.
     let employees = await db.queryPromise('SELECT * FROM employee');
 
     employees = employees.map(employee => {
@@ -178,7 +186,7 @@ const addEmployee = async () => {
             value: employee.first_name + " " + employee.last_name,
         };
     });
-
+    //Add extra value for if user choose to have no manager for an employee
     employees.push({key: -1,
         value: "No Manager"})
 
@@ -206,6 +214,7 @@ const addEmployee = async () => {
             choices: () => employees,
                 
         },
+        //Create query based on choice of a manager or not
     ]).then((data) => {
         if (data.manager_name === "No Manager"){
             let sql = `INSERT INTO employee (first_name, last_name, job_role_id, manager_id) 
@@ -258,6 +267,7 @@ const addEmployee = async () => {
 };
 
 const updateEmployee = async () => {
+    //Map roles and employees from each respective table giving them a key value pair.
     let roles = await db.queryPromise('SELECT * FROM job_role');
 
     roles = roles.map(role => {
@@ -289,6 +299,7 @@ const updateEmployee = async () => {
             message: 'What new role do you want to assign?',
             choices: () => roles,
         },
+        //Create new variable for the new role id from the new role.
     ]).then((data) => {
         for(let i = 0; i < roles.length; i++){
             if (data.job_role_name = roles[i].value){
@@ -298,6 +309,7 @@ const updateEmployee = async () => {
                 newEmployeeID = employees[i].key;
             }
         }
+        //Update employee role based on new job chosen
         db.query("UPDATE employee SET job_role_id = (?) WHERE employee.id = (?)", [newRoleID, newEmployeeID], function (err, results) {
             if (err) {
                 console.log(err)
