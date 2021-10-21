@@ -301,7 +301,6 @@ const updateEmployee = async () => {
         },
         //Create new variable for the new role id from the new role.
     ]).then((data) => {
-        console.log(employees)
         for(let i = 0; i < roles.length; i++){
             if (data.job_role_name === roles[i].value){
                 newRoleID = roles[i].key;
